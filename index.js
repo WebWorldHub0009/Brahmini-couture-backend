@@ -2,33 +2,34 @@ const express = require('express');
 const connectToDb = require('./Config/db');
 const userRouter = require('./Routes/userRouter');
 const productRouter = require('./Routes/productRouter');
-const cors = require('cors'); // ✅ import cors
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 
-// ✅ Use CORS
+// ✅ Use CORS to allow frontend connection
 app.use(cors({
-  origin: "http://localhost:5173", // <-- frontend origin
+  origin: "http://localhost:5173", // Frontend URL (Vite, likely)
   credentials: true,
 }));
 
+// ✅ Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ✅ Connect to MongoDB
 connectToDb();
 
-const port = process.env.PORT;
-
-// Routes
+// ✅ Routes
 app.use("/users", userRouter);
 app.use("/products", productRouter);
 
-// Default route
+// ✅ Default route
 app.get("/", (req, res) => {
   res.send("I am root");
 });
 
+const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`✅ App is running on port ${port}`);
 });

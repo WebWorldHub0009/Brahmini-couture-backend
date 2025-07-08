@@ -110,45 +110,72 @@ const getSingleProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedData = req.body;
 
-    // Convert & normalize fields
-    if (updatedData.price)  updatedData.price  = Number(updatedData.price);
-    if (updatedData.stock)  updatedData.stock  = Number(updatedData.stock);
-    if (updatedData.category) updatedData.category = updatedData.category.toLowerCase();
-    if (updatedData.sareeType) updatedData.sareeType = updatedData.sareeType.toLowerCase();
-
-    if (updatedData.sizes && typeof updatedData.sizes === "string") {
-      updatedData.sizes = [updatedData.sizes];
+    const existingProduct = await Product.findById(id);
+    if (!existingProduct) {
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    if (updatedData.tags && typeof updatedData.tags === "string") {
-      updatedData.tags = [updatedData.tags];
+    const {
+      name,
+      description,
+      price,
+      category,
+      sareeType,
+      stock,
+      sizes,
+      tags,
+    } = req.body;
+
+    const updatedFields = {
+      name,
+      description,
+      price: Number(price),
+      category: category?.toLowerCase(),
+      sareeType: category === "saree" ? sareeType?.toLowerCase() : undefined,
+      stock: Number(stock),
+    };
+
+    // Normalize sizes and tags
+    if (sizes) {
+      updatedFields.sizes = Array.isArray(sizes) ? sizes : [sizes];
     }
 
-    // If new images uploaded, replace
+    if (tags) {
+      updatedFields.tags = Array.isArray(tags) ? tags : [tags];
+    }
+
+    // Update images only if new files are uploaded
     if (req.files && req.files.length > 0) {
-      updatedData.images = req.files.map((file) => ({
+      updatedFields.images = req.files.map((file) => ({
         public_id: file.filename,
         url: file.path,
       }));
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(id, updatedData, {
+    // Remove undefined keys
+    Object.keys(updatedFields).forEach((key) => {
+      if (updatedFields[key] === undefined) {
+        delete updatedFields[key];
+      }
+    });
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updatedFields, {
       new: true,
       runValidators: true,
     });
 
-    if (!updatedProduct) {
-      return res.status(404).json({ success: false, message: "Product not found" });
-    }
-
-    res.status(200).json({ success: true, message: "Product updated successfully", product: updatedProduct });
+    res.status(200).json({
+      success: true,
+      message: "Product updated successfully",
+      product: updatedProduct,
+    });
   } catch (error) {
     console.error("❌ updateProduct Error:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
+
 
 /**
  * @desc   Delete product by ID (admin only)
