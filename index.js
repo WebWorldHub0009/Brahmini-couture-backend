@@ -2,6 +2,7 @@ const express = require('express');
 const connectToDb = require('./Config/db');
 const userRouter = require('./Routes/userRouter');
 const productRouter = require('./Routes/productRouter');
+const cartRoutes = require('./Routes/cartRouter');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -23,6 +24,7 @@ connectToDb();
 // ✅ Routes
 app.use("/users", userRouter);
 app.use("/products", productRouter);
+app.use("/cart", cartRoutes)
 
 // ✅ Default route
 app.get("/", (req, res) => {
