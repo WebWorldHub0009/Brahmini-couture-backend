@@ -51,7 +51,6 @@ const userRegister = async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
-   
     if (!name || !email || !password) {
       return res.json({ message: "All fields are required", success: false });
     }
@@ -71,18 +70,158 @@ const userRegister = async (req, res) => {
       role: role || 'customer' 
     });
 
-    if (user) {
-      return res.json({ message: "User created successfully", success: true });
-    } else {
-      return res.json({ message: "Error in creating user", success: false });
-    }
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+
+    return res.json({
+      message: "User created successfully",
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
 
   } catch (err) {
     return res.json({ message: err.message, success: false });
   }
 };
 
+
+
+const addAddress = async (req, res) => {
+  try {
+    const { fullName, phone, pincode, addressLine, city, state, country, isDefault } = req.body;
+
+    const user = await userModel.findById(req.user._id);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // If it's default, unset previous defaults
+    if (isDefault) {
+      user.addresses.forEach((addr) => (addr.isDefault = false));
+    }
+
+    let newAddress = {
+      fullName,
+      phone,
+      pincode,
+      addressLine,
+      city,
+      state,
+      country,
+      isDefault,
+    };
+
+    user.addresses.push(newAddress);
+    await user.save();
+
+    res.status(201).json({ message: 'Address added successfully', addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to add address', error: error.message });
+  }
+};
+
+const getAddresses = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user._id);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch addresses', error: error.message });
+  }
+};
+
+const updateAddress = async (req, res) => {
+  try {
+    const { index } = req.params;
+    const { fullName, phone, pincode, addressLine, city, state, country, isDefault } = req.body;
+
+    const user = await userModel.findById(req.user._id);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!user.addresses[index]) return res.status(404).json({ message: 'Address not found' });
+
+    if (isDefault) {
+      user.addresses.forEach((addr) => (addr.isDefault = false));
+    }
+
+    user.addresses[index] = {
+      fullName,
+      phone,
+      pincode,
+      addressLine,
+      city,
+      state,
+      country,
+      isDefault,
+    };
+
+    await user.save();
+
+    res.status(200).json({ message: 'Address updated', addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update address', error: error.message });
+  }
+};
+
+const deleteAddress = async (req, res) => {
+  try {
+    const { index } = req.params;
+
+    const user = await userModel.findById(req.user._id);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!user.addresses[index]) return res.status(404).json({ message: 'Address not found' });
+
+    user.addresses.splice(index, 1);
+    await user.save();
+
+    res.status(200).json({ message: 'Address deleted', addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete address', error: error.message });
+  }
+};
+
+
+const setDefaultAddress = async (req, res) => {
+  try {
+    const { index } = req.params;
+
+    const user = await userModel.findById(req.user._id);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!user.addresses[index]) return res.status(404).json({ message: 'Address not found' });
+
+    user.addresses.forEach((addr, i) => {
+      addr.isDefault = i == index;
+    });
+
+    await user.save();
+
+    res.status(200).json({ message: 'Default address updated', addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to set default address', error: error.message });
+  }
+};
+
 module.exports = {
     userLogin,
-    userRegister
+    userRegister,
+    addAddress,
+    getAddresses,
+    updateAddress,
+    deleteAddress,
+    setDefaultAddress
 }
