@@ -216,12 +216,18 @@ const setDefaultAddress = async (req, res) => {
   }
 };
 
-module.exports = {
-    userLogin,
-    userRegister,
-    addAddress,
-    getAddresses,
-    updateAddress,
-    deleteAddress,
-    setDefaultAddress
-}
+// ✅ Get logged-in user profile (with orders)
+const getUserProfile = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user._id).select("-password");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+module.exports = { userLogin, userRegister, addAddress, getAddresses, updateAddress, deleteAddress, setDefaultAddress, getUserProfile };
+
+
