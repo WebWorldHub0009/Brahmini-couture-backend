@@ -42,7 +42,7 @@ app.use("/products", productRouter);
 app.use("/cart", cartRoutes);
 app.use("/address", addressRouter);
 app.use("/orders", orderRouter);
-app.use("/api/payments", paymentRoutes); // ✅ Razorpay endpoints
+app.use("/payments", paymentRoutes);
 
 // ✅ Default route
 app.get("/", (req, res) => {
