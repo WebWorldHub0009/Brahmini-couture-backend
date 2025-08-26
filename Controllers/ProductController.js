@@ -32,9 +32,10 @@ const createProduct = async (req, res) => {
 
     // ── Construct image array ────────────────────────────────
     const images = req.files.map((file) => ({
-      public_id: file.filename,
-      url: file.path,
-    }));
+  public_id: file.public_id,   // correct
+  url: file.path,              // cloudinary secure url
+}));
+
 
     // ── Normalize & build productData ────────────────────────
     const productData = {
